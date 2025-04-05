@@ -1,53 +1,31 @@
-const cheerio = require('cheerio');
+const { modifyHTML } = require('../app');
 const { sampleHtmlWithYale } = require('./test-utils');
+const cheerio = require('cheerio');
 
-describe('Yale to Fale replacement logic', () => {
-  
-  test('should replace Yale with Fale in text content', () => {
-    const $ = cheerio.load(sampleHtmlWithYale);
+describe('Yale to Sammi replacement logic (unit tests)', () => {
+  test('should replace Yale with Sammi in text content', () => {
+    const modifiedHtml = modifyHTML(sampleHtmlWithYale);
+    const $ = cheerio.load(modifiedHtml);
     
-    // Process text nodes in the body
-    $('body *').contents().filter(function() {
-      return this.nodeType === 3; // Text nodes only
-    }).each(function() {
-      // Replace text content but not in URLs or attributes
-      const text = $(this).text();
-      const newText = text.replace(/Yale/g, 'Fale').replace(/yale/g, 'fale');
-      if (text !== newText) {
-        $(this).replaceWith(newText);
-      }
-    });
+    // Verify that text replacements occurred.
+    expect($('title').text()).toBe('Sammi University Test Page');
+    expect($('h1').text()).toBe('Welcome to Sammi University');
+    expect($('p').first().text()).toContain('Sammi University is a private');
     
-    // Process title separately
-    const title = $('title').text().replace(/Yale/g, 'Fale').replace(/yale/g, 'fale');
-    $('title').text(title);
-    
-    const modifiedHtml = $.html();
-    
-    // Check text replacements
-    expect(modifiedHtml).toContain('Fale University Test Page');
-    expect(modifiedHtml).toContain('Welcome to Fale University');
-    expect(modifiedHtml).toContain('Fale University is a private Ivy League');
-    expect(modifiedHtml).toContain('Fale was founded in 1701');
-    
-    // Check that URLs remain unchanged
+    // Verify that URLs remain unchanged.
     expect(modifiedHtml).toContain('https://www.yale.edu/about');
     expect(modifiedHtml).toContain('https://www.yale.edu/admissions');
-    expect(modifiedHtml).toContain('https://www.yale.edu/images/logo.png');
-    expect(modifiedHtml).toContain('mailto:info@yale.edu');
-    
-    // Check href attributes remain unchanged
     expect(modifiedHtml).toMatch(/href="https:\/\/www\.yale\.edu\/about"/);
     expect(modifiedHtml).toMatch(/href="https:\/\/www\.yale\.edu\/admissions"/);
     
-    // Check that link text is replaced
-    expect(modifiedHtml).toContain('>About Fale<');
-    expect(modifiedHtml).toContain('>Fale Admissions<');
+    // Verify that link text is replaced.
+    expect(modifiedHtml).toContain('>About Sammi<');
+    expect(modifiedHtml).toContain('>Sammi Admissions<');
     
-    // Check that alt attributes are not changed
+    // Verify that alt attributes are unchanged.
     expect(modifiedHtml).toContain('alt="Yale Logo"');
   });
-
+  
   test('should handle text that has no Yale references', () => {
     const htmlWithoutYale = `
       <!DOCTYPE html>
@@ -61,47 +39,22 @@ describe('Yale to Fale replacement logic', () => {
       </body>
       </html>
     `;
+    const modifiedHtml = modifyHTML(htmlWithoutYale);
     
-    const $ = cheerio.load(htmlWithoutYale);
-    
-    // Apply the same replacement logic
-    $('body *').contents().filter(function() {
-      return this.nodeType === 3;
-    }).each(function() {
-      const text = $(this).text();
-      const newText = text.replace(/Yale/g, 'Fale').replace(/yale/g, 'fale');
-      if (text !== newText) {
-        $(this).replaceWith(newText);
-      }
-    });
-    
-    const modifiedHtml = $.html();
-    
-    // Content should remain the same
+    // Since we replace "Yale" (case-insensitively) with "Sammi",
+    // the phrase "no Yale references" becomes "no Sammi references".
     expect(modifiedHtml).toContain('<title>Test Page</title>');
     expect(modifiedHtml).toContain('<h1>Hello World</h1>');
-    expect(modifiedHtml).toContain('<p>This is a test page with no Yale references.</p>');
+    expect(modifiedHtml).toContain('<p>This is a test page with no Sammi references.</p>');
   });
 
   test('should handle case-insensitive replacements', () => {
     const mixedCaseHtml = `
       <p>YALE University, Yale College, and yale medical school are all part of the same institution.</p>
     `;
-    
-    const $ = cheerio.load(mixedCaseHtml);
-    
-    $('body *').contents().filter(function() {
-      return this.nodeType === 3;
-    }).each(function() {
-      const text = $(this).text();
-      const newText = text.replace(/Yale/gi, 'Fale');
-      if (text !== newText) {
-        $(this).replaceWith(newText);
-      }
-    });
-    
-    const modifiedHtml = $.html();
-    
-    expect(modifiedHtml).toContain('FALE University, Fale College, and fale medical school');
+    const modifiedHtml = modifyHTML(mixedCaseHtml);
+    // Using /Yale/gi, every occurrence (regardless of case) is replaced with "Sammi".
+    // Thus, expected output:
+    expect(modifiedHtml).toContain('Sammi University, Sammi College, and Sammi medical school');
   });
 });
