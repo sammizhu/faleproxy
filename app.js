@@ -26,34 +26,46 @@ app.post('/fetch', async (req, res) => {
     }
 
     // Fetch the content from the provided URL
-    const response = await axios.get(url);
-    const html = response.data;
+    try {
+      const response = await axios.get(url);
+      const html = response.data;
 
-    // Use cheerio to parse HTML and selectively replace text content, not URLs
-    const $ = cheerio.load(html);
-    
-    // Process text nodes in the body
-    $('body *').contents().filter(function() {
-      return this.nodeType === 3; // Text nodes only
-    }).each(function() {
-      // Replace text content but not in URLs or attributes
-      const text = $(this).text();
-      const newText = text.replace(/Yale/g, 'Fale').replace(/yale/g, 'fale');
-      if (text !== newText) {
-        $(this).replaceWith(newText);
+      // Use cheerio to parse HTML and selectively replace text content, not URLs
+      const $ = cheerio.load(html);
+      
+      // Process text nodes in the body
+      $('body *').contents().filter(function() {
+        return this.nodeType === 3; // Text nodes only
+      }).each(function() {
+        // Replace text content but not in URLs or attributes
+        const text = $(this).text();
+        const newText = text.replace(/Yale/gi, 'Fale'); // Case-insensitive replacement
+        if (text !== newText) {
+          $(this).replaceWith(newText);
+        }
+      });
+      
+      // Process title separately
+      const title = $('title').text().replace(/Yale/gi, 'Fale'); // Case-insensitive replacement
+      $('title').text(title);
+      
+      return res.json({ 
+        success: true, 
+        content: $.html(),
+        title: title,
+        originalUrl: url
+      });
+    } catch (error) {
+      if (error.response && error.response.status === 404) {
+        return res.status(400).json({ 
+          error: 'Invalid URL' 
+        });
       }
-    });
-    
-    // Process title separately
-    const title = $('title').text().replace(/Yale/g, 'Fale').replace(/yale/g, 'fale');
-    $('title').text(title);
-    
-    return res.json({ 
-      success: true, 
-      content: $.html(),
-      title: title,
-      originalUrl: url
-    });
+      console.error('Error fetching URL:', error.message);
+      return res.status(500).json({ 
+        error: `Failed to fetch content: ${error.message}` 
+      });
+    }
   } catch (error) {
     console.error('Error fetching URL:', error.message);
     return res.status(500).json({ 
