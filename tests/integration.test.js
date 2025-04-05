@@ -1,9 +1,10 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
-const { app } = require('../app');
+const { createApp, modifyHTML } = require('../app');
 const { sampleHtmlWithYale } = require('./test-utils');
 const nock = require('nock');
 
+// Set a different port for testing to avoid conflict with the main app
 const TEST_PORT = 5000;
 let server;
 
@@ -11,6 +12,7 @@ beforeAll((done) => {
   // Allow connections only to 127.0.0.1 for tests.
   nock.disableNetConnect();
   nock.enableNetConnect('127.0.0.1');
+  const app = createApp();
   server = app.listen(TEST_PORT, '127.0.0.1', done);
 });
 
