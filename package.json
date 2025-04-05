@@ -40,6 +40,7 @@
         "functions": 70,
         "lines": 70
       }
-    }
+    },
+    "setupFiles": ["<rootDir>/jest.setup.js"]
   }
 }
